@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+    home-shopping-app:
+        build: .
+        container_name: home-shopping-flask
+        ports:
+            - "5000:5000"
+        environment:
+            - FLASK_APP=app.py
+            - FLASK_ENV=production
+            - SECRET_KEY=your-secret-key-change-this-in-production
+            - SQLALCHEMY_DATABASE_URI=sqlite:///shopping.db
+        volumes:
+            - app-data:/app/instance
+            - ./templates:/app/templates:ro
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 40s
+
+volumes:
+    app-data:
+        driver: local

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white"><strong>افزودن وسیله جدید</strong></div>
+      <div class="card-body">
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label">نام وسیله *</label>
+            <input name="name" class="form-control" required placeholder="مثلاً یخچال">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">دسته</label>
+            <select name="category_id" id="category-select" class="form-select" onchange="loadSubcategories()">
+              <option value="">— انتخاب کنید —</option>
+              {% for c in categories %}
+              <option value="{{ c.id }}">{{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">زیردسته</label>
+            <select name="subcategory_id" id="subcategory-select" class="form-select">
+              <option value="">— ابتدا دسته را انتخاب کنید —</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">اتاق / محل استفاده</label>
+            <input name="room" class="form-control" placeholder="مثلاً آشپزخانه">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">بودجه (تومان)</label>
+            <input name="budget" type="number" step="0.01" class="form-control" placeholder="مثلاً 25000000">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">یادداشت</label>
+            <textarea name="notes" class="form-control" rows="3"></textarea>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-primary">ثبت وسیله</button>
+            <a class="btn btn-outline-secondary" href="{{ url_for('index') }}">انصراف</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function loadSubcategories() {
+    const categorySelect = document.getElementById('category-select');
+    const subcategorySelect = document.getElementById('subcategory-select');
+    const categoryId = categorySelect.value;
+
+    // Reset subcategory
+    subcategorySelect.innerHTML = '<option value="">— ابتدا دسته را انتخاب کنید —</option>';
+
+    if (categoryId) {
+      subcategorySelect.innerHTML = '<option value="">— در حال بارگذاری —</option>';
+
+      fetch(`/api/subcategories/${categoryId}`)
+        .then(response => response.json())
+        .then(data => {
+          subcategorySelect.innerHTML = '<option value="">— انتخاب کنید —</option>';
+          data.subcategories.forEach(sub => {
+            const option = document.createElement('option');
+            option.value = sub.id;
+            option.textContent = sub.name;
+            subcategorySelect.appendChild(option);
+          });
+        })
+        .catch(error => {
+          console.error('Error loading subcategories:', error);
+          subcategorySelect.innerHTML = '<option value="">— خطا در بارگذاری —</option>';
+        });
+    }
+  }
+</script>
+{% endblock %}
