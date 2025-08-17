@@ -10,8 +10,8 @@ WORKDIR /app
 # Copy package files and lock file
 COPY frontend/package.json frontend/pnpm-lock.yaml ./
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile --prod
+# Install dependencies (including dev dependencies needed for build)
+RUN pnpm install --frozen-lockfile
 
 # Copy frontend source code
 COPY frontend/ .
