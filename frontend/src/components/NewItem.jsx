@@ -31,7 +31,7 @@ const NewItem = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get('/api/dashboard');
+      const response = await axios.get('https://api.shopping.amirrezajef.ir/api/dashboard');
       setCategories(response.data.categories);
     } catch (err) {
       setError('خطا در دریافت دسته‌بندی‌ها');
@@ -46,7 +46,7 @@ const NewItem = () => {
     }
     
     try {
-      const response = await axios.get(`/api/subcategories/${categoryId}`);
+      const response = await axios.get(`https://api.shopping.amirrezajef.ir/api/subcategories/${categoryId}`);
       setSubcategories(response.data.subcategories);
     } catch (err) {
       setError('خطا در دریافت زیردسته‌ها');
@@ -78,7 +78,7 @@ const NewItem = () => {
     setError(null);
 
     try {
-      const response = await axios.post('/api/items', formData);
+      const response = await axios.post('https://api.shopping.amirrezajef.ir/api/items', formData);
       if (response.data.success) {
         navigate(`/items/${response.data.item.id}`);
       } else {

@@ -31,7 +31,7 @@ const Dashboard = () => {
       if (selectedCategory && selectedCategory !== 'all') params.category = selectedCategory;
       if (selectedSubcategory && selectedSubcategory !== 'all') params.subcategory = selectedSubcategory;
       
-      const response = await axios.get('/api/dashboard', { params });
+      const response = await axios.get('https://api.shopping.amirrezajef.ir/api/dashboard', { params });
       setDashboardData(response.data);
       setError(null);
     } catch (err) {
@@ -54,7 +54,7 @@ const Dashboard = () => {
   const handleDeleteItem = async (itemId) => {
     if (window.confirm('آیا مطمئن هستید که می‌خواهید این آیتم را حذف کنید؟')) {
       try {
-        await axios.delete(`/api/items/${itemId}`);
+        await axios.delete(`https://api.shopping.amirrezajef.ir/api/items/${itemId}`);
         fetchDashboardData(); // Refresh data
       } catch (err) {
         setError('خطا در حذف آیتم');
