@@ -2,7 +2,46 @@
 
 ## Common Deployment Issues and Solutions
 
-### 1. `/bin/bash: -c: option requires an argument` Error
+### 1. Database Permission Error: `unable to open database file`
+
+This error occurs when the application can't create or access the SQLite database file.
+
+#### Solution 1: Rebuild with Fixed Dockerfile
+
+The Dockerfile has been updated to fix permission issues:
+
+```bash
+# Rebuild the image
+docker-compose down -v
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+#### Solution 2: Initialize Database Manually
+
+If the error persists, manually initialize the database:
+
+```bash
+# Access the container
+docker-compose exec home-shopping-app bash
+
+# Run the initialization script
+python init_db.py
+```
+
+#### Solution 3: Check Volume Permissions
+
+```bash
+# Check volume details
+docker volume inspect home_shopping_flask_app-data
+
+# Remove and recreate volume
+docker-compose down -v
+docker volume rm home_shopping_flask_app-data
+docker-compose up -d
+```
+
+### 2. `/bin/bash: -c: option requires an argument` Error
 
 This error typically occurs when there's an issue with the health check command or shell execution.
 
@@ -36,7 +75,7 @@ Edit `docker-compose.yml` and comment out the healthcheck section:
 #     start_period: 40s
 ```
 
-### 2. Port Already in Use
+### 3. Port Already in Use
 
 ```bash
 # Check what's using port 5000
@@ -47,7 +86,7 @@ ports:
     - "8080:5000"  # Use port 8080 instead
 ```
 
-### 3. Permission Denied
+### 4. Permission Denied
 
 ```bash
 # Fix file permissions
@@ -57,7 +96,7 @@ chmod 755 templates/
 # On Windows, run as Administrator
 ```
 
-### 4. Build Failures
+### 5. Build Failures
 
 ```bash
 # Clean Docker cache
@@ -70,7 +109,7 @@ docker-compose build --no-cache
 docker-compose logs
 ```
 
-### 5. Database Connection Issues
+### 6. Database Connection Issues
 
 ```bash
 # Check container logs
@@ -123,6 +162,9 @@ python --version
 
 # Check if Flask app can start
 python -c "from app import app; print('Flask app imported successfully')"
+
+# Initialize database manually
+python init_db.py
 ```
 
 ## 🐛 Debug Mode

@@ -13,6 +13,7 @@ services:
             - SQLALCHEMY_DATABASE_URI=sqlite:///shopping.db
             - HOST=0.0.0.0
             - PORT=5000
+            - PYTHONUNBUFFERED=1
         volumes:
             - app-data:/app/instance
             - ./templates:/app/templates:ro

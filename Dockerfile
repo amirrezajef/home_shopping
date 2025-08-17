@@ -30,9 +30,14 @@ RUN pip install --no-cache-dir --upgrade pip \
 # Copy application code
 COPY . .
 
+# Create instance directory and set proper permissions
+RUN mkdir -p /app/instance \
+    && chmod 755 /app/instance
+
 # Create non-root user for security
 RUN adduser --disabled-password --gecos '' appuser \
-    && chown -R appuser:appuser /app
+    && chown -R appuser:appuser /app \
+    && chmod 755 /app/instance
 USER appuser
 
 # Create volume for database persistence
