@@ -45,24 +45,25 @@ Once deployed, your application will be available at:
 -   **Local**: http://localhost:5000
 -   **Network**: http://your-server-ip:5000
 
-## 🗄️ Database Initialization
+## 🗄️ Database initialization
 
-After starting the application:
+In container terminal run:
 
-1. Open your browser and navigate to the app
-2. Click the "🗄️ راه‌اندازی دیتابیس" button in the navigation bar
-3. This will create all categories and subcategories
+```bash
+python /app/migrate_db.py
+```
 
 ## 📁 File Structure
 
 ```
 home_shopping_flask/
-├── Dockerfile              # Docker image definition
-├── docker-compose.yml      # Multi-container setup
+├── Dockerfile             # Docker image definition
+├── docker-compose.yml     # Multi-container setup
 ├── .dockerignore          # Files to exclude from Docker build
 ├── deploy.sh              # Linux/macOS deployment script
 ├── deploy.bat             # Windows deployment script
 ├── app.py                 # Main Flask application
+├── migrate_db.py          # database migration
 ├── requirements.txt       # Python dependencies
 └── templates/             # HTML templates
 ```
