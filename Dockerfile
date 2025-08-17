@@ -27,12 +27,13 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy application code and templates
 COPY . .
 
 # Create instance directory and set proper permissions
 RUN mkdir -p /app/instance \
-    && chmod 755 /app/instance
+    && chmod 755 /app/instance \
+    && chmod -R 755 /app/templates
 
 # Create non-root user for security
 RUN adduser --disabled-password --gecos '' appuser \

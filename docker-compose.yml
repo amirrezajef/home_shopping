@@ -16,7 +16,7 @@ services:
             - PYTHONUNBUFFERED=1
         volumes:
             - app-data:/app/instance
-            - ./templates:/app/templates:ro
+            - .:/app
         restart: unless-stopped
         healthcheck:
             test: ["CMD", "curl", "-f", "http://localhost:5000/"]
