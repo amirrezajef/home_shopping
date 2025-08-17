@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-echo 🚀 Starting Home Shopping Flask App deployment...
+echo 🚀 Starting Home Shopping Application deployment...
 
 REM Check if Docker is running
 docker info >nul 2>&1
@@ -19,19 +19,21 @@ if %errorlevel% neq 0 (
 )
 
 REM Build and start the application
-echo 🔨 Building Docker image...
+echo 🔨 Building Docker images...
 docker-compose build
 
 if %errorlevel% equ 0 (
-    echo ✅ Docker image built successfully!
+    echo ✅ Docker images built successfully!
     
     echo 🚀 Starting the application...
     docker-compose up -d
     
     if %errorlevel% equ 0 (
         echo ✅ Application started successfully!
-        echo 🌐 Access your app at: http://localhost:5000
-        echo 🗄️ Don't forget to initialize the database using the button in the navigation bar!
+        echo 🌐 Access your app at:
+        echo    Frontend: http://localhost:3000
+        echo    API: http://localhost:5000
+        echo 🗄️ Don't forget to initialize the database using the API endpoint: http://localhost:5000/api/init-db
         
         REM Show running containers
         echo 📊 Running containers:
@@ -50,9 +52,9 @@ if %errorlevel% equ 0 (
         exit /b 1
     )
 ) else (
-    echo ❌ Failed to build Docker image.
+    echo ❌ Failed to build Docker images.
     pause
     exit /b 1
 )
 
-pause
+pause 

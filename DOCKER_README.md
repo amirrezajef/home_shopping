@@ -1,26 +1,31 @@
 # 🐳 Docker Deployment Guide
 
-This guide explains how to deploy your Home Shopping Flask application using Docker.
+This guide explains how to deploy your Home Shopping Application using Docker. The application consists of a Flask API backend and a React frontend, each running in separate containers.
 
 ## 📋 Prerequisites
 
--   [Docker](https://docs.docker.com/get-docker/) installed and running
--   [Docker Compose](https://docs.docker.com/compose/install/) installed
--   Git (to clone the repository)
+- [Docker](https://docs.docker.com/get-docker/) installed and running
+- [Docker Compose](https://docs.docker.com/compose/install/) installed
+- Git (to clone the repository)
+
+## 🏗️ Architecture
+
+The application is split into two main services:
+
+- **API Service**: Flask backend running on port 5000
+- **Frontend Service**: React frontend served by Nginx on port 3000
 
 ## 🚀 Quick Start
 
 ### Method 1: Using Deployment Scripts (Recommended)
 
 #### For Linux/macOS:
-
 ```bash
 chmod +x deploy.sh
 ./deploy.sh
 ```
 
 #### For Windows:
-
 ```cmd
 deploy.bat
 ```
@@ -28,7 +33,7 @@ deploy.bat
 ### Method 2: Manual Docker Commands
 
 ```bash
-# Build the Docker image
+# Build the Docker images
 docker-compose build
 
 # Start the application
@@ -42,30 +47,37 @@ docker-compose ps
 
 Once deployed, your application will be available at:
 
--   **Local**: http://localhost:5000
--   **Network**: http://your-server-ip:5000
+- **Frontend**: http://localhost:3000
+- **API**: http://localhost:5000
 
-## 🗄️ Database initialization
+## 🗄️ Database Initialization
 
-In container terminal run:
+After starting the containers, initialize the database by calling:
 
 ```bash
-python /app/migrate_db.py
+curl -X POST http://localhost:5000/api/init-db
 ```
+
+Or visit: http://localhost:5000/api/init-db
 
 ## 📁 File Structure
 
 ```
-home_shopping_flask/
-├── Dockerfile             # Docker image definition
-├── docker-compose.yml     # Multi-container setup
-├── .dockerignore          # Files to exclude from Docker build
-├── deploy.sh              # Linux/macOS deployment script
-├── deploy.bat             # Windows deployment script
-├── app.py                 # Main Flask application
-├── migrate_db.py          # database migration
-├── requirements.txt       # Python dependencies
-└── templates/             # HTML templates
+home_shopping/
+├── Dockerfile.api              # API Docker image definition
+├── Dockerfile.frontend         # Frontend Docker image definition
+├── docker-compose.yml          # Production multi-container setup
+├── docker-compose.dev.yml      # Development setup with hot reload
+├── .dockerignore               # Files to exclude from Docker build
+├── nginx.conf                  # Nginx configuration for frontend
+├── deploy.sh                   # Linux/macOS deployment script
+├── deploy.bat                  # Windows deployment script
+├── api/                        # Flask API backend
+│   ├── app.py                  # Main Flask application
+│   └── requirements.txt        # Python dependencies
+└── frontend/                   # React frontend
+    ├── package.json            # Node.js dependencies
+    └── src/                    # React source code
 ```
 
 ## ⚙️ Configuration
@@ -76,20 +88,21 @@ You can customize the application by setting these environment variables in `doc
 
 ```yaml
 environment:
-    - FLASK_ENV=production
-    - SECRET_KEY=your-secure-secret-key
-    - SQLALCHEMY_DATABASE_URI=sqlite:///shopping.db
-    - HOST=0.0.0.0
-    - PORT=5000
+  - FLASK_ENV=production
+  - SECRET_KEY=your-secure-secret-key
+  - SQLALCHEMY_DATABASE_URI=sqlite:///shopping.db
+  - HOST=0.0.0.0
+  - PORT=5000
 ```
 
 ### Port Configuration
 
-To change the port, modify the `docker-compose.yml`:
+To change the ports, modify the `docker-compose.yml`:
 
 ```yaml
 ports:
-    - "8080:5000" # Maps host port 8080 to container port 5000
+  - "8080:5000"  # Maps host port 8080 to API container port 5000
+  - "3001:80"    # Maps host port 3001 to frontend container port 80
 ```
 
 ## 🔧 Management Commands
@@ -97,11 +110,12 @@ ports:
 ### View Logs
 
 ```bash
-# Follow logs in real-time
+# Follow logs for all services
 docker-compose logs -f
 
 # View logs for specific service
-docker-compose logs home-shopping-app
+docker-compose logs api
+docker-compose logs frontend
 ```
 
 ### Stop the Application
@@ -131,36 +145,40 @@ docker-compose ps
 ### Access Container Shell
 
 ```bash
-docker-compose exec home-shopping-app bash
+# API container
+docker-compose exec api bash
+
+# Frontend container
+docker-compose exec frontend sh
 ```
 
 ## 💾 Data Persistence
 
 The application uses Docker volumes to persist data:
 
--   **Database**: Stored in `app-data` volume
--   **Templates**: Mounted from host for easy updates
+- **Database**: Stored in `api-data` volume
+- **Frontend**: Built and served statically
 
 ### Backup Database
 
 ```bash
 # Copy database from container
-docker cp home-shopping-flask:/app/instance/shopping.db ./backup/
+docker cp home-shopping-api:/app/instance/shopping.db ./backup/
 ```
 
 ### Restore Database
 
 ```bash
 # Copy database to container
-docker cp ./backup/shopping.db home-shopping-flask:/app/instance/
+docker cp ./backup/shopping.db home-shopping-api:/app/instance/
 ```
 
 ## 🔒 Security Features
 
--   **Non-root user**: Application runs as `appuser` instead of root
--   **Health checks**: Automatic health monitoring
--   **Volume isolation**: Database stored in dedicated volume
--   **Read-only templates**: Templates mounted as read-only
+- **Non-root user**: API runs as `appuser` instead of root
+- **Health checks**: Automatic health monitoring for API
+- **Volume isolation**: Database stored in dedicated volume
+- **Security headers**: Frontend includes security headers via Nginx
 
 ## 🚨 Troubleshooting
 
@@ -169,10 +187,11 @@ docker cp ./backup/shopping.db home-shopping-flask:/app/instance/
 #### Port Already in Use
 
 ```bash
-# Check what's using port 5000
+# Check what's using the ports
 netstat -tulpn | grep :5000
+netstat -tulpn | grep :3000
 
-# Kill the process or change port in docker-compose.yml
+# Kill the process or change ports in docker-compose.yml
 ```
 
 #### Permission Denied
@@ -180,17 +199,18 @@ netstat -tulpn | grep :5000
 ```bash
 # Fix file permissions
 chmod +x deploy.sh
-chmod 755 templates/
+chmod 755 api/
+chmod 755 frontend/
 ```
 
 #### Database Connection Issues
 
 ```bash
-# Check container logs
-docker-compose logs home-shopping-app
+# Check API container logs
+docker-compose logs api
 
-# Restart the container
-docker-compose restart home-shopping-app
+# Restart the API container
+docker-compose restart api
 ```
 
 #### Build Failures
@@ -205,14 +225,14 @@ docker-compose build --no-cache
 
 ### Health Check
 
-The application includes a health check endpoint:
+The API includes a health check endpoint:
 
 ```bash
 # Check health status
-curl http://localhost:5000/
+curl http://localhost:5000/api/health
 
 # View health check logs
-docker inspect home-shopping-flask | grep Health -A 10
+docker inspect home-shopping-api | grep Health -A 10
 ```
 
 ## 📊 Monitoring
@@ -221,10 +241,11 @@ docker inspect home-shopping-flask | grep Health -A 10
 
 ```bash
 # View container resource usage
-docker stats home-shopping-flask
+docker stats
 
 # View detailed container info
-docker inspect home-shopping-flask
+docker inspect home-shopping-api
+docker inspect home-shopping-frontend
 ```
 
 ### Log Analysis
@@ -252,7 +273,7 @@ docker-compose up -d --build
 ### Update Dependencies
 
 ```bash
-# Update requirements.txt
+# Update requirements.txt or package.json
 # Then rebuild
 docker-compose up -d --build
 ```
@@ -270,6 +291,24 @@ docker volume prune
 docker system prune -a
 ```
 
+## 🧪 Development Mode
+
+For development with hot reloading, use the development compose file:
+
+```bash
+# Start development environment
+docker-compose -f docker-compose.dev.yml up -d
+
+# View development logs
+docker-compose -f docker-compose.dev.yml logs -f
+```
+
+Development mode includes:
+- Hot reloading for both frontend and backend
+- Source code mounted as volumes
+- Development dependencies installed
+- Debug mode enabled for Flask
+
 ## 🌍 Production Deployment
 
 For production environments:
@@ -280,40 +319,21 @@ For production environments:
 4. **Monitoring**: Add logging and monitoring solutions
 5. **Backup**: Set up automated database backups
 
-### Example Production docker-compose.yml
+### Example Production Environment Variables
 
-```yaml
-version: "3.8"
-
-services:
-    home-shopping-app:
-        build: .
-        container_name: home-shopping-flask
-        ports:
-            - "5000:5000"
-        environment:
-            - FLASK_ENV=production
-            - SECRET_KEY=${SECRET_KEY}
-            - SQLALCHEMY_DATABASE_URI=${DATABASE_URL}
-        volumes:
-            - app-data:/app/instance
-        restart: always
-        logging:
-            driver: "json-file"
-            options:
-                max-size: "10m"
-                max-file: "3"
-
-volumes:
-    app-data:
-        driver: local
+```bash
+export SECRET_KEY="your-very-secure-secret-key-here"
+export FLASK_ENV="production"
+export DATABASE_URL="postgresql://user:pass@host:port/db"
 ```
 
 ## 📚 Additional Resources
 
--   [Docker Documentation](https://docs.docker.com/)
--   [Docker Compose Documentation](https://docs.docker.com/compose/)
--   [Flask Documentation](https://flask.palletsprojects.com/)
+- [Docker Documentation](https://docs.docker.com/)
+- [Docker Compose Documentation](https://docs.docker.com/compose/)
+- [Flask Documentation](https://flask.palletsprojects.com/)
+- [React Documentation](https://reactjs.org/)
+- [Nginx Documentation](https://nginx.org/en/docs/)
 
 ## 🆘 Support
 
@@ -323,6 +343,7 @@ If you encounter issues:
 2. Verify Docker is running: `docker info`
 3. Check container status: `docker-compose ps`
 4. Review this documentation
+5. Check the troubleshooting section above
 
 ---
 

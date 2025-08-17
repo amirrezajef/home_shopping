@@ -30,7 +30,7 @@ ENV/
 env/
 .venv/
 
-# IDE
+# IDEs
 .vscode/
 .idea/
 *.swp
@@ -46,24 +46,36 @@ env/
 ehthumbs.db
 Thumbs.db
 
-# Docker
-Dockerfile
-.dockerignore
-docker-compose.yml
-
-# Documentation
-README.md
-*.md
-
-# Database (will be created in container)
+# Project specific
 instance/
 *.db
 *.sqlite
+*.sqlite3
 
-# Logs
-logs/
-*.log
+# Documentation
+*.md
+!README.md
 
-# Temporary files
-tmp/
-temp/
+# Scripts (keep only necessary ones)
+start.bat
+start.sh
+deploy.bat
+deploy.sh
+
+# Templates (not needed for API)
+templates/
+
+# Root level app.py (duplicate)
+app.py
+init_db.py
+migrate_db.py
+
+# Docker files (avoid recursive copying)
+Dockerfile*
+docker-compose.yml
+.dockerignore
+
+# Frontend build artifacts (will be built in container)
+frontend/dist/
+frontend/node_modules/
+frontend/.vite/
