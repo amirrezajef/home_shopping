@@ -34,7 +34,7 @@ const ItemDetail = () => {
   const fetchItemDetails = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`https://api.shopping.amirrezajef.ir/api/items/${itemId}`);
+      const response = await axios.get(`/api/items/${itemId}`);
       setItem(response.data.item);
       setOptions(response.data.options);
       setError(null);
@@ -69,7 +69,7 @@ const ItemDetail = () => {
     }
 
     try {
-      const response = await axios.post('https://api.shopping.amirrezajef.ir/api/options', {
+      const response = await axios.post('/api/options', {
         ...optionFormData,
         item_id: itemId
       });
@@ -99,7 +99,7 @@ const ItemDetail = () => {
 
   const handleSelectOption = async (optionId) => {
     try {
-      await axios.put(`https://api.shopping.amirrezajef.ir/api/options/${optionId}/select`);
+      await axios.put(`/api/options/${optionId}/select`);
       fetchItemDetails(); // Refresh to update selection states
     } catch (err) {
       setError('خطا در انتخاب گزینه');
@@ -109,7 +109,7 @@ const ItemDetail = () => {
 
   const handleUnselectOption = async (optionId) => {
     try {
-      await axios.put(`https://api.shopping.amirrezajef.ir/api/options/${optionId}/unselect`);
+      await axios.put(`/api/options/${optionId}/unselect`);
       fetchItemDetails(); // Refresh to update selection states
     } catch (err) {
       setError('خطا در لغو انتخاب گزینه');
@@ -120,7 +120,7 @@ const ItemDetail = () => {
   const handleDeleteOption = async (optionId) => {
     if (window.confirm('آیا مطمئن هستید که می‌خواهید این گزینه را حذف کنید؟')) {
       try {
-        await axios.delete(`https://api.shopping.amirrezajef.ir/api/options/${optionId}`);
+        await axios.delete(`/api/options/${optionId}`);
         fetchItemDetails(); // Refresh to update options list
       } catch (err) {
         setError('خطا در حذف گزینه');
@@ -132,7 +132,7 @@ const ItemDetail = () => {
   const handleDeleteItem = async () => {
     if (window.confirm('آیا مطمئن هستید که می‌خواهید این آیتم را حذف کنید؟')) {
       try {
-        await axios.delete(`https://api.shopping.amirrezajef.ir/api/items/${itemId}`);
+        await axios.delete(`/api/items/${itemId}`);
         navigate('/');
       } catch (err) {
         setError('خطا در حذف آیتم');
