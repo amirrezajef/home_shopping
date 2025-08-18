@@ -75,7 +75,7 @@ const Dashboard = () => {
       }
     });
 
-    return allItems;
+    return allItems.sort((a, b) => a.id - b.id);
   };
 
   // Helper function to get items for a specific category

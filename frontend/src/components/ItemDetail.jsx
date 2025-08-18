@@ -315,13 +315,13 @@ const ItemDetail = () => {
       {/* Item Header */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex max-md:flex-col items-center justify-between">
             <div>
               <CardTitle className="text-3xl">{item.name}</CardTitle>
               <CardDescription>جزئیات و گزینه‌های آیتم</CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button onClick={() => navigate('/')} variant="outline">
+              <Button className="max-md:hidden" onClick={() => navigate('/')} variant="outline">
                 بازگشت به داشبورد
               </Button>
               <Button onClick={handleDeleteItem} variant="destructive">
