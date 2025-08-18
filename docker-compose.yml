@@ -35,6 +35,8 @@ services:
             context: .
             dockerfile: Dockerfile.frontend
         container_name: home-shopping-frontend
+        expose:
+            - "80"
         depends_on:
             - api
         restart: unless-stopped
