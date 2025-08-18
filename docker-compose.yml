@@ -1,52 +1,50 @@
 version: "3.8"
 
 services:
-  # Flask API Backend
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
-    container_name: home-shopping-api
-    ports:
-      - "5000:5000"
-    environment:
-      - FLASK_APP=app.py
-      - FLASK_ENV=production
-      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-this-in-production}
-      - SQLALCHEMY_DATABASE_URI=sqlite:///shopping.db
-      - HOST=0.0.0.0
-      - PORT=5000
-      - PYTHONUNBUFFERED=1
-    volumes:
-      - api-data:/app/instance
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    networks:
-      - home-shopping-network
+    # Flask API Backend
+    api:
+        build:
+            context: .
+            dockerfile: Dockerfile.api
+        container_name: home-shopping-api
+        ports:
+            - "5000:5000"
+        environment:
+            - FLASK_APP=app.py
+            - FLASK_ENV=production
+            - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-this-in-production}
+            - SQLALCHEMY_DATABASE_URI=sqlite:///shopping.db
+            - HOST=0.0.0.0
+            - PORT=5000
+            - PYTHONUNBUFFERED=1
+        volumes:
+            - api-data:/app/instance
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+            interval: 60s
+            timeout: 10s
+            retries: 3
+            start_period: 40s
+        networks:
+            - home-shopping-network
 
-  # React Frontend
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
-    container_name: home-shopping-frontend
-    ports:
-      - "3000:80"
-    depends_on:
-      - api
-    restart: unless-stopped
-    networks:
-      - home-shopping-network
+    # React Frontend
+    frontend:
+        build:
+            context: .
+            dockerfile: Dockerfile.frontend
+        container_name: home-shopping-frontend
+        depends_on:
+            - api
+        restart: unless-stopped
+        networks:
+            - home-shopping-network
 
 volumes:
-  api-data:
-    driver: local
+    api-data:
+        driver: local
 
 networks:
-  home-shopping-network:
-    driver: bridge 
+    home-shopping-network:
+        driver: bridge
