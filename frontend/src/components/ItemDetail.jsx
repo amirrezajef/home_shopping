@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, LineChart, Line } from 'recharts';
 
 const ItemDetail = () => {
@@ -15,9 +16,12 @@ const ItemDetail = () => {
   const navigate = useNavigate();
   const [item, setItem] = useState(null);
   const [options, setOptions] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddOptionForm, setShowAddOptionForm] = useState(false);
+  const [showEditItemForm, setShowEditItemForm] = useState(false);
+  const [editingOptionId, setEditingOptionId] = useState(null);
   const [optionFormData, setOptionFormData] = useState({
     brand: '',
     model_name: '',
@@ -29,6 +33,14 @@ const ItemDetail = () => {
     warranty_months: '',
     available: true,
     notes: ''
+  });
+  const [itemFormData, setItemFormData] = useState({
+    name: '',
+    room: '',
+    notes: '',
+    budget: '',
+    category_id: '',
+    subcategory_id: ''
   });
 
   const fetchItemDetails = useCallback(async () => {
@@ -46,11 +58,21 @@ const ItemDetail = () => {
     }
   }, [itemId]);
 
+  const fetchCategories = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/categories');
+      setCategories(response.data.categories);
+    } catch (err) {
+      console.error('Categories fetch error:', err);
+    }
+  }, []);
+
   useEffect(() => {
     if (itemId) {
       fetchItemDetails();
+      fetchCategories();
     }
-  }, [itemId, fetchItemDetails]);
+  }, [itemId, fetchItemDetails, fetchCategories]);
 
   const handleOptionInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -58,6 +80,123 @@ const ItemDetail = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+  };
+
+  const handleItemInputChange = (e) => {
+    const { name, value } = e.target;
+    setItemFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleItemSelectChange = (name, value) => {
+    setItemFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleEditItem = () => {
+    setItemFormData({
+      name: item.name || '',
+      room: item.room || '',
+      notes: item.notes || '',
+      budget: item.budget || '',
+      category_id: item.category_id || '',
+      subcategory_id: item.subcategory_id || ''
+    });
+    setShowEditItemForm(true);
+  };
+
+  const handleUpdateItem = async (e) => {
+    e.preventDefault();
+    
+    if (!itemFormData.name) {
+      setError('نام آیتم الزامی است');
+      return;
+    }
+
+    try {
+      const response = await axios.put(`/api/items/${itemId}`, itemFormData);
+      
+      if (response.data.success) {
+        await fetchItemDetails();
+        setShowEditItemForm(false);
+        setError(null);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'خطا در به‌روزرسانی آیتم');
+      console.error('Update item error:', err);
+    }
+  };
+
+  const handleEditOption = (option) => {
+    setOptionFormData({
+      brand: option.brand || '',
+      model_name: option.model_name || '',
+      price: option.price || '',
+      store: option.store || '',
+      link: option.link || '',
+      features: option.features || '',
+      rating: option.rating || '',
+      warranty_months: option.warranty_months || '',
+      available: option.available,
+      notes: option.notes || ''
+    });
+    setEditingOptionId(option.id);
+  };
+
+  const handleUpdateOption = async (e) => {
+    e.preventDefault();
+
+    if (!optionFormData.brand || !optionFormData.model_name) {
+      setError('برند و نام مدل الزامی است');
+      return;
+    }
+
+    try {
+      const response = await axios.put(`/api/options/${editingOptionId}`, optionFormData);
+
+      if (response.data.success) {
+        await fetchItemDetails();
+        setEditingOptionId(null);
+        setOptionFormData({
+          brand: '',
+          model_name: '',
+          price: '',
+          store: '',
+          link: '',
+          features: '',
+          rating: '',
+          warranty_months: '',
+          available: true,
+          notes: ''
+        });
+        setError(null);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'خطا در به‌روزرسانی گزینه');
+      console.error('Update option error:', err);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setShowEditItemForm(false);
+    setEditingOptionId(null);
+    setOptionFormData({
+      brand: '',
+      model_name: '',
+      price: '',
+      store: '',
+      link: '',
+      features: '',
+      rating: '',
+      warranty_months: '',
+      available: true,
+      notes: ''
+    });
+    setError(null);
   };
 
   const handleAddOption = async (e) => {
@@ -170,7 +309,6 @@ const ItemDetail = () => {
       </div>
     );
   }
-  console.log(item);
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -189,30 +327,121 @@ const ItemDetail = () => {
               <Button onClick={handleDeleteItem} variant="destructive">
                 حذف آیتم
               </Button>
+              <Button onClick={handleEditItem} variant="outline">
+                ویرایش آیتم
+              </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-1">
-              <Label className="text-sm font-medium text-muted-foreground">دسته‌بندی</Label>
-              <p className="text-sm">{item.category || 'تعیین نشده'}</p>
+          {showEditItemForm ? (
+            <form onSubmit={handleUpdateItem} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">نام آیتم *</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    value={itemFormData.name}
+                    onChange={handleItemInputChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="room">اتاق</Label>
+                  <Input
+                    id="room"
+                    name="room"
+                    value={itemFormData.room}
+                    onChange={handleItemInputChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="budget">بودجه (تومان)</Label>
+                  <Input
+                    id="budget"
+                    name="budget"
+                    type="number"
+                    value={itemFormData.budget}
+                    onChange={handleItemInputChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="category">دسته‌بندی</Label>
+                  <Select onValueChange={(value) => handleItemSelectChange('category_id', value)} value={itemFormData.category_id}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="انتخاب کنید" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map(category => (
+                        <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="subcategory">زیردسته</Label>
+                  <Select onValueChange={(value) => handleItemSelectChange('subcategory_id', value)} value={itemFormData.subcategory_id}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="انتخاب کنید" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.find(cat => cat.id == itemFormData.category_id)?.subcategories?.map(sub => (
+                        <SelectItem key={sub.id} value={sub.id}>{sub.name}</SelectItem>
+                      )) || []}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="notes">یادداشت</Label>
+                <Textarea
+                  id="notes"
+                  name="notes"
+                  value={itemFormData.notes}
+                  onChange={handleItemInputChange}
+                  rows={3}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={handleCancelEdit}>
+                  لغو
+                </Button>
+                <Button type="submit">ذخیره تغییرات</Button>
+              </div>
+            </form>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="space-y-1">
+                <Label className="text-sm font-medium text-muted-foreground">دسته‌بندی</Label>
+                <p className="text-sm">{item.category || 'تعیین نشده'}</p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm font-medium text-muted-foreground">زیردسته</Label>
+                <p className="text-sm">{item.subcategory || 'تعیین نشده'}</p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm font-medium text-muted-foreground">اتاق</Label>
+                <p className="text-sm">{item.room || 'تعیین نشده'}</p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm font-medium text-muted-foreground">بودجه</Label>
+                <p className="text-sm">{item.budget ? item.budget.toLocaleString() : 'تعیین نشده'} تومان</p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm font-medium text-muted-foreground">وضعیت</Label>
+                <Badge variant={item.status === 'selected' ? 'default' : 'secondary'}>
+                  {item.status === 'selected' ? 'انتخاب شده' : 'انتخاب نشده'}
+                </Badge>
+              </div>
+              {item.notes && (
+                <div className="mt-4 space-y-1">
+                  <Label className="text-sm font-medium text-muted-foreground">یادداشت</Label>
+                  <p className="text-sm">{item.notes}</p>
+                </div>
+              )}
             </div>
-            <div className="space-y-1">
-              <Label className="text-sm font-medium text-muted-foreground">زیردسته</Label>
-              <p className="text-sm">{item.subcategory || 'تعیین نشده'}</p>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-sm font-medium text-muted-foreground">بودجه</Label>
-              <p className="text-sm">{item.budget ? item.budget.toLocaleString() : 'تعیین نشده'} تومان</p>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-sm font-medium text-muted-foreground">وضعیت</Label>
-              <Badge variant={item.status === 'selected' ? 'default' : 'secondary'}>
-                {item.status === 'selected' ? 'انتخاب شده' : 'انتخاب نشده'}
-              </Badge>
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
@@ -353,6 +582,129 @@ const ItemDetail = () => {
             </Card>
           )}
 
+          {editingOptionId && (
+            <Card className="border-dashed">
+              <CardHeader>
+                <CardTitle className="text-lg">ویرایش گزینه</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleUpdateOption} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="brand">برند *</Label>
+                      <Input
+                        id="brand"
+                        name="brand"
+                        value={optionFormData.brand}
+                        onChange={handleOptionInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="model_name">نام مدل *</Label>
+                      <Input
+                        id="model_name"
+                        name="model_name"
+                        value={optionFormData.model_name}
+                        onChange={handleOptionInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="price">قیمت (تومان)</Label>
+                      <Input
+                        id="price"
+                        name="price"
+                        type="number"
+                        value={optionFormData.price}
+                        onChange={handleOptionInputChange}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="store">فروشگاه</Label>
+                      <Input
+                        id="store"
+                        name="store"
+                        value={optionFormData.store}
+                        onChange={handleOptionInputChange}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="link">لینک</Label>
+                      <Input
+                        id="link"
+                        name="link"
+                        type="url"
+                        value={optionFormData.link}
+                        onChange={handleOptionInputChange}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="rating">امتیاز (1-5)</Label>
+                      <Input
+                        id="rating"
+                        name="rating"
+                        type="number"
+                        min="1"
+                        max="5"
+                        value={optionFormData.rating}
+                        onChange={handleOptionInputChange}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="warranty_months">گارانتی (ماه)</Label>
+                      <Input
+                        id="warranty_months"
+                        name="warranty_months"
+                        type="number"
+                        value={optionFormData.warranty_months}
+                        onChange={handleOptionInputChange}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="flex items-center space-x-2 space-x-reverse">
+                        <input
+                          type="checkbox"
+                          name="available"
+                          checked={optionFormData.available}
+                          onChange={handleOptionInputChange}
+                          className="rounded"
+                        />
+                        <span>موجود است</span>
+                      </Label>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="features">امکانات</Label>
+                    <Textarea
+                      id="features"
+                      name="features"
+                      value={optionFormData.features}
+                      onChange={handleOptionInputChange}
+                      rows={3}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">یادداشت</Label>
+                    <Textarea
+                      id="notes"
+                      name="notes"
+                      value={optionFormData.notes}
+                      onChange={handleOptionInputChange}
+                      rows={3}
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setEditingOptionId(null)}>
+                      لغو
+                    </Button>
+                    <Button type="submit">ذخیره تغییرات</Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          )}
+
           <Separator />
 
           {/* Options List */}
@@ -413,6 +765,13 @@ const ItemDetail = () => {
                         انتخاب
                       </Button>
                     )}
+                    <Button
+                      onClick={() => handleEditOption(option)}
+                      variant="outline"
+                      size="sm"
+                    >
+                      ویرایش
+                    </Button>
                     <Button
                       onClick={() => handleDeleteOption(option.id)}
                       variant="destructive"

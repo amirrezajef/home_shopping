@@ -557,16 +557,47 @@ def unselect_option(option_id):
     except Exception as e:
         return jsonify({"message": f"خطا در خارج کردن گزینه از حالت انتخاب: {str(e)}", "success": False}), 500
 
-@app.route('/api/options/<int:option_id>', methods=['DELETE'])
-def delete_option(option_id):
-    try:
-        option = Option.query.get_or_404(option_id)
-        item_id = option.item_id
-        db.session.delete(option)
-        db.session.commit()
-        return jsonify({"message": "گزینه حذف شد.", "success": True}), 200
-    except Exception as e:
-        return jsonify({"message": f"خطا در حذف گزینه: {str(e)}", "success": False}), 500
+@app.route('/api/options/<int:option_id>', methods=['PUT', 'DELETE'])
+def option_detail(option_id):
+    option = Option.query.get_or_404(option_id)
+    
+    if request.method == 'PUT':
+        try:
+            data = request.get_json()
+            if 'brand' in data:
+                option.brand = data['brand']
+            if 'model_name' in data:
+                option.model_name = data['model_name']
+            if 'price' in data:
+                option.price = float(data['price']) if data['price'] else None
+            if 'store' in data:
+                option.store = data['store']
+            if 'link' in data:
+                option.link = data['link']
+            if 'features' in data:
+                option.features = data['features']
+            if 'rating' in data:
+                option.rating = float(data['rating']) if data['rating'] else None
+            if 'warranty_months' in data:
+                option.warranty_months = int(data['warranty_months']) if data['warranty_months'] else None
+            if 'available' in data:
+                option.available = data['available']
+            if 'notes' in data:
+                option.notes = data['notes']
+            
+            db.session.commit()
+            return jsonify({"message": "گزینه با موفقیت به‌روزرسانی شد.", "success": True}), 200
+        except Exception as e:
+            return jsonify({"message": f"خطا در به‌روزرسانی گزینه: {str(e)}", "success": False}), 500
+    
+    elif request.method == 'DELETE':
+        try:
+            item_id = option.item_id
+            db.session.delete(option)
+            db.session.commit()
+            return jsonify({"message": "گزینه حذف شد.", "success": True}), 200
+        except Exception as e:
+            return jsonify({"message": f"خطا در حذف گزینه: {str(e)}", "success": False}), 500
 
 @app.route('/api/export/selected.csv')
 def export_selected():
@@ -584,6 +615,22 @@ def export_selected():
                         headers={"Content-Disposition": "attachment;filename=selected_options.csv"})
     except Exception as e:
         return jsonify({"message": f"خطا در صادرات: {str(e)}", "success": False}), 500
+
+@app.route('/api/categories')
+def get_categories():
+    try:
+        categories = Category.query.all()
+        categories_data = []
+        for category in categories:
+            subcategories = [{'id': sub.id, 'name': sub.name} for sub in category.subcategories]
+            categories_data.append({
+                'id': category.id,
+                'name': category.name,
+                'subcategories': subcategories
+            })
+        return jsonify({'categories': categories_data}), 200
+    except Exception as e:
+        return jsonify({"message": f"خطا در دریافت دسته‌بندی‌ها: {str(e)}", "success": False}), 500
 
 @app.route('/api/subcategories/<int:category_id>')
 def get_subcategories(category_id):
