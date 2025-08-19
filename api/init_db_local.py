@@ -1,36 +1,40 @@
 #!/usr/bin/env python3
 """
-Database initialization script for Docker container
+Database initialization script for local development
 This script ensures the database is properly created with correct permissions
 """
 
 import os
 import sys
+
+# Add the parent directory to the path so we can import from api package
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from api.app_factory import create_app
 from api.app_factory import db
-from api.models import Category, Subcategory
+from api.models import Category, Subcategory, Item, Option
 
 def init_database():
     """Initialize the database with proper setup"""
     app = create_app()
     with app.app_context():
-        print("🗄️ Initializing database...")
+        print("Initializing database...")
         
         # Ensure instance directory exists and is writable
-        instance_path = '/app/instance'
+        instance_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'instance')
         if not os.path.exists(instance_path):
             os.makedirs(instance_path, mode=0o755)
-            print(f"✅ Created instance directory: {instance_path}")
+            print(f"Created instance directory: {instance_path}")
         
         # Create database tables
         db.create_all()
-        print("✅ Database tables created")
+        print("Database tables created")
         
         # Check if categories already exist
         if Category.query.first():
-            print("✅ Categories already exist, skipping creation")
+            print("Categories already exist, skipping creation")
         else:
-            print("🌱 Creating categories and subcategories...")
+            print("Creating categories and subcategories...")
             
             # آشپزخانه
             kitchen = Category(name="آشپزخانه")
@@ -120,21 +124,22 @@ def init_database():
                 db.session.add(Subcategory(name=sub_name, category_id=general.id))
             
             db.session.commit()
-            print("✅ Categories and subcategories created successfully")
+            print("Categories and subcategories created successfully")
         
-        print("🎉 Database initialization completed!")
-        print("📊 Database file location: /app/instance/shopping.db")
+        print("Database initialization completed!")
+        print(f"Database file location: {os.path.join(instance_path, 'shopping.db')}")
         
         # Check file permissions
         db_file = os.path.join(instance_path, 'shopping.db')
         if os.path.exists(db_file):
             stat = os.stat(db_file)
-            print(f"📁 Database file permissions: {oct(stat.st_mode)}")
-            print(f"👤 Owner: {stat.st_uid}, Group: {stat.st_gid}")
+            print(f"Database file permissions: {oct(stat.st_mode)}")
 
 if __name__ == '__main__':
     try:
         init_database()
     except Exception as e:
-        print(f"❌ Database initialization failed: {e}")
+        print(f"Database initialization failed: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)

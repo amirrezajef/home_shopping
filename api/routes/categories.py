@@ -1,41 +1,19 @@
-#!/usr/bin/env python3
-"""
-Database initialization script for Docker container
-This script ensures the database is properly created with correct permissions
-"""
-
-import os
-import sys
-from api.app_factory import create_app
+from flask import Blueprint, jsonify, request
 from api.app_factory import db
 from api.models import Category, Subcategory
 
-def init_database():
-    """Initialize the database with proper setup"""
-    app = create_app()
-    with app.app_context():
-        print("🗄️ Initializing database...")
-        
-        # Ensure instance directory exists and is writable
-        instance_path = '/app/instance'
-        if not os.path.exists(instance_path):
-            os.makedirs(instance_path, mode=0o755)
-            print(f"✅ Created instance directory: {instance_path}")
-        
-        # Create database tables
+categories_bp = Blueprint('categories', __name__, url_prefix='/api')
+
+@categories_bp.route('/init-db', methods=['POST'])
+def init_db():
+    try:
         db.create_all()
-        print("✅ Database tables created")
-        
-        # Check if categories already exist
-        if Category.query.first():
-            print("✅ Categories already exist, skipping creation")
-        else:
-            print("🌱 Creating categories and subcategories...")
-            
+        # Seed categories and subcategories
+        if not Category.query.first():
             # آشپزخانه
             kitchen = Category(name="آشپزخانه")
             db.session.add(kitchen)
-            db.session.flush()
+            db.session.flush()  # Get the ID
             
             kitchen_subs = [
                 "یخچال و فریزر", "اجاق گاز", "فر برقی", "مایکروویو", "هود آشپزخانه",
@@ -120,21 +98,32 @@ def init_database():
                 db.session.add(Subcategory(name=sub_name, category_id=general.id))
             
             db.session.commit()
-            print("✅ Categories and subcategories created successfully")
-        
-        print("🎉 Database initialization completed!")
-        print("📊 Database file location: /app/instance/shopping.db")
-        
-        # Check file permissions
-        db_file = os.path.join(instance_path, 'shopping.db')
-        if os.path.exists(db_file):
-            stat = os.stat(db_file)
-            print(f"📁 Database file permissions: {oct(stat.st_mode)}")
-            print(f"👤 Owner: {stat.st_uid}, Group: {stat.st_gid}")
-
-if __name__ == '__main__':
-    try:
-        init_database()
+            return jsonify({"message": "دیتابیس با موفقیت راه‌اندازی شد.", "success": True}), 200
+        else:
+            return jsonify({"message": "دیتابیس قبلاً راه‌اندازی شده است.", "success": True}), 200
     except Exception as e:
-        print(f"❌ Database initialization failed: {e}")
-        sys.exit(1)
+        return jsonify({"message": f"خطا در راه‌اندازی دیتابیس: {str(e)}", "success": False}), 500
+
+@categories_bp.route('/categories')
+def get_categories():
+    try:
+        categories = Category.query.all()
+        categories_data = []
+        for category in categories:
+            subcategories = [{'id': sub.id, 'name': sub.name} for sub in category.subcategories]
+            categories_data.append({
+                'id': category.id,
+                'name': category.name,
+                'subcategories': subcategories
+            })
+        return jsonify({'categories': categories_data}), 200
+    except Exception as e:
+        return jsonify({"message": f"خطا در دریافت دسته‌بندی‌ها: {str(e)}", "success": False}), 500
+
+@categories_bp.route('/subcategories/<int:category_id>')
+def get_subcategories(category_id):
+    try:
+        subcategories = Subcategory.query.filter_by(category_id=category_id).order_by(Subcategory.name).all()
+        return jsonify({'subcategories': [{'id': sub.id, 'name': sub.name} for sub in subcategories]}), 200
+    except Exception as e:
+        return jsonify({"message": f"خطا در دریافت زیردسته‌ها: {str(e)}", "success": False}), 500

@@ -3,9 +3,12 @@
 Simple test script to check database state
 """
 
-from app import app, db, Item, Category
+from api.app_factory import create_app
+from api.app_factory import db
+from api.models import Item, Category
 
 def test_database():
+    app = create_app()
     with app.app_context():
         print("🔍 Checking database state...")
         
@@ -36,4 +39,4 @@ def test_database():
                     print(f"    - {item.name}")
 
 if __name__ == "__main__":
-    test_database() 
+    test_database()
