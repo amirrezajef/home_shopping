@@ -22,6 +22,7 @@ const ItemDetail = () => {
   const [showAddOptionForm, setShowAddOptionForm] = useState(false);
   const [showEditItemForm, setShowEditItemForm] = useState(false);
   const [editingOptionId, setEditingOptionId] = useState(null);
+  const [parsingUrl, setParsingUrl] = useState(false);
   const [optionFormData, setOptionFormData] = useState({
     brand: '',
     model_name: '',
@@ -80,6 +81,43 @@ const ItemDetail = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+};
+
+  const handleParseUrl = async () => {
+    if (!optionFormData.link) {
+      setError('لطفاً یک URL وارد کنید');
+      return;
+    }
+
+    setParsingUrl(true);
+    setError(null);
+
+    try {
+      const response = await axios.post('/api/options/parse-url', {
+        url: optionFormData.link
+      });
+
+      if (response.data.success) {
+        // Update form data with parsed information
+        setOptionFormData(prev => ({
+          ...prev,
+          brand: response.data.data.brand || prev.brand,
+          model_name: response.data.data.model_name || prev.model_name,
+          price: response.data.data.price || prev.price,
+          store: response.data.data.store || prev.store,
+          features: response.data.data.features || prev.features,
+          rating: response.data.data.rating || prev.rating,
+          warranty_months: response.data.data.warranty_months || prev.warranty_months
+        }));
+      } else {
+        setError(response.data.message || 'خطا در تجزیه URL');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'خطا در تجزیه URL');
+      console.error('URL parsing error:', err);
+    } finally {
+      setParsingUrl(false);
+    }
   };
 
   const handleItemInputChange = (e) => {
@@ -471,6 +509,26 @@ const ItemDetail = () => {
                 <form onSubmit={handleAddOption} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
+                      <Label htmlFor="link">لینک محصول</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="link"
+                          name="link"
+                          type="url"
+                          value={optionFormData.link}
+                          onChange={handleOptionInputChange}
+                          placeholder="https://example.com/product"
+                        />
+                        <Button
+                          type="button"
+                          onClick={handleParseUrl}
+                          disabled={!optionFormData.link || parsingUrl}
+                        >
+                          {parsingUrl ? 'در حال تجزیه...' : 'تجزیه'}
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
                       <Label htmlFor="brand">برند *</Label>
                       <Input
                         id="brand"
@@ -510,14 +568,6 @@ const ItemDetail = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="link">لینک</Label>
-                      <Input
-                        id="link"
-                        name="link"
-                        type="url"
-                        value={optionFormData.link}
-                        onChange={handleOptionInputChange}
-                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="rating">امتیاز (1-5)</Label>
@@ -591,6 +641,26 @@ const ItemDetail = () => {
                 <form onSubmit={handleUpdateOption} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
+                      <Label htmlFor="link">لینک محصول</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="link"
+                          name="link"
+                          type="url"
+                          value={optionFormData.link}
+                          onChange={handleOptionInputChange}
+                          placeholder="https://example.com/product"
+                        />
+                        <Button
+                          type="button"
+                          onClick={handleParseUrl}
+                          disabled={!optionFormData.link || parsingUrl}
+                        >
+                          {parsingUrl ? 'در حال تجزیه...' : 'تجزیه'}
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
                       <Label htmlFor="brand">برند *</Label>
                       <Input
                         id="brand"
@@ -630,14 +700,6 @@ const ItemDetail = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="link">لینک</Label>
-                      <Input
-                        id="link"
-                        name="link"
-                        type="url"
-                        value={optionFormData.link}
-                        onChange={handleOptionInputChange}
-                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="rating">امتیاز (1-5)</Label>

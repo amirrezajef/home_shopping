@@ -119,3 +119,48 @@ def option_detail(option_id):
             return jsonify({"message": "گزینه حذف شد.", "success": True}), 200
         except Exception as e:
             return jsonify({"message": f"خطا در حذف گزینه: {str(e)}", "success": False}), 500
+
+
+@options_bp.route('/options/parse-url', methods=['POST'])
+def parse_option_url():
+    """
+    Parse product information from a URL
+    
+    Expected JSON input:
+    {
+        "url": "https://example.com/product"
+    }
+    
+    Returns:
+    {
+        "success": true,
+        "data": {
+            "brand": "Example Brand",
+            "model_name": "Example Model",
+            "price": 123456.0,
+            "store": "Example Store",
+            "link": "https://example.com/product",
+            ...
+        }
+    }
+    """
+    try:
+        from api.utils import parse_product_url
+        
+        data = request.get_json()
+        url = data.get('url')
+        
+        if not url:
+            return jsonify({"message": "URL الزامی است.", "success": False}), 400
+        
+        # Parse URL to extract product information
+        parsed_data = parse_product_url(url)
+        
+        return jsonify({
+            "message": "اطلاعات محصول با موفقیت استخراج شد.",
+            "success": True,
+            "data": parsed_data
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"message": f"خطا در تجزیه URL: {str(e)}", "success": False}), 500
