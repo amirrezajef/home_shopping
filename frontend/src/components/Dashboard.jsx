@@ -248,7 +248,7 @@ const Dashboard = () => {
                     <Separator />
                     <div className="flex gap-2">
                       <Button asChild size="sm" className="flex-1">
-                        <Link to={`/items/${item.id}`}>
+                        <Link to={`/items/${item.id}`} target='_blank'>
                           مشاهده جزئیات
                         </Link>
                       </Button>
