@@ -13,11 +13,11 @@ WORKDIR /app
 # Install system dependencies including curl for health checks
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        gcc \
-        g++ \
-        libffi-dev \
-        libssl-dev \
-        curl \
+    gcc \
+    g++ \
+    libffi-dev \
+    libssl-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
@@ -27,8 +27,22 @@ COPY api/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
-# Copy API application code
-COPY api/ .
+# Install Playwright browsers and required OS libraries into a shared path
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+    libxkbcommon0 libxcomposite1 libxdamage1 libxrandr2 libgbm1 \
+    libasound2 libxss1 libpangocairo-1.0-0 libpango-1.0-0 \
+    libgtk-3-0 libgdk-pixbuf-xlib-2.0-0 fonts-unifont fonts-liberation fonts-dejavu-core ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /ms-playwright \
+    && python -m playwright install chromium \
+    && chmod -R a+rX /ms-playwright
+
+# Copy API application code into an `api` package directory so imports like
+# `from api.app_factory import create_app` work when running inside the container.
+COPY api/ ./api/
 
 # Create instance directory and set proper permissions
 RUN mkdir -p /app/instance \
@@ -36,7 +50,7 @@ RUN mkdir -p /app/instance \
 
 # Create non-root user for security
 RUN adduser --disabled-password --gecos '' appuser \
-    && chown -R appuser:appuser /app \
+    && chown -R appuser:appuser /app /ms-playwright \
     && chmod 755 /app/instance
 USER appuser
 
@@ -50,5 +64,6 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:5000/api/health || exit 1
 
-# Run the application
-CMD ["python", "app.py"] 
+# Run the application as a module so package imports resolve correctly
+# (this will run `api/app.py`).
+CMD ["python", "-m", "api.app"]

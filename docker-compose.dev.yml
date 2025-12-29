@@ -1,54 +1,46 @@
 version: "3.8"
 
 services:
-  # Flask API Backend (Development)
-  api-dev:
-    build:
-      context: .
-      dockerfile: Dockerfile.api.dev
-    container_name: home-shopping-api-dev
-    ports:
-      - "5000:5000"
-    environment:
-      - FLASK_APP=app.py
-      - FLASK_ENV=development
-      - FLASK_DEBUG=1
-      - SECRET_KEY=dev-secret-key
-      - SQLALCHEMY_DATABASE_URI=sqlite:///shopping.db
-      - HOST=0.0.0.0
-      - PORT=5000
-      - PYTHONUNBUFFERED=1
-    volumes:
-      - api-dev-data:/app/instance
-      - ./api:/app  # Mount source code for hot reload
-    restart: unless-stopped
-    networks:
-      - home-shopping-dev-network
+    # Flask API Backend
+    api:
+        build:
+            context: .
+            dockerfile: Dockerfile.api
+        container_name: home-shopping-api-dev
+        ports:
+            - "5000:5000"
+        environment:
+            - FLASK_APP=app.py
+            - FLASK_ENV=production
+            - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-this-in-production}
+            - SQLALCHEMY_DATABASE_URI=sqlite:///shopping.db
+            - HOST=0.0.0.0
+            - PORT=5000
+            - PYTHONUNBUFFERED=1
+        volumes:
+            - api-data:/app/instance
+        restart: unless-stopped
+        networks:
+            - home-shopping-dev-network
 
-  # React Frontend (Development)
-  frontend-dev:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend.dev
-    container_name: home-shopping-frontend-dev
-    ports:
-      - "3000:3000"
-    depends_on:
-      - api-dev
-    volumes:
-      - ./frontend:/app  # Mount source code for hot reload
-      - /app/node_modules  # Preserve node_modules
-    environment:
-      - CHOKIDAR_USEPOLLING=true  # For Windows compatibility
-      - WATCHPACK_POLLING=true
-    restart: unless-stopped
-    networks:
-      - home-shopping-dev-network
+    # React Frontend
+    frontend:
+        build:
+            context: .
+            dockerfile: Dockerfile.frontend
+        container_name: home-shopping-dev-frontend
+        ports:
+            - "3000:80"
+        depends_on:
+            - api
+        restart: unless-stopped
+        networks:
+            - home-shopping-dev-network
 
 volumes:
-  api-dev-data:
-    driver: local
+    api-data:
+        driver: local
 
 networks:
-  home-shopping-dev-network:
-    driver: bridge 
+    home-shopping-dev-network:
+        driver: bridge
